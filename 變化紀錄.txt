@@ -1,0 +1,39 @@
+9/19:
+計算與0點的相對座標，
+資料加強:鏡射、與前一幀相比的位移、與第1幀相比的位移(都是記錄所有節點)、
+        隨機丟掉一些 frame(保底留0.3)、時間序列做拉伸或壓縮(0.8-1.2)
+給個影片固定存30幀資料，小於的補零，大於使用均勻取樣
+
+# --- 建立模型 ---
+model = Sequential([
+    Masking(mask_value=0., input_shape=(X.shape[1], X.shape[2])),
+    LSTM(32, return_sequences=True),#
+    Dropout(0.5),
+    LSTM(32),
+    Dropout(0.4),
+    Dense(32, activation='tanh'),#relu 目前結果都差不多
+    Dense(num_classes, activation='softmax')
+])
+
+Test Report:
+                  precision    recall  f1-score   support
+
+            dad       1.00      1.00      1.00        13
+            mom       1.00      0.90      0.95        10
+  older brother       1.00      0.90      0.95        10
+   older sister       0.82      0.90      0.86        10
+          sorry       1.00      0.75      0.86         8
+         thanks       0.92      1.00      0.96        12
+younger brother       0.89      1.00      0.94         8
+ younger sister       0.91      1.00      0.95        10
+
+       accuracy                           0.94        81
+      macro avg       0.94      0.93      0.93        81
+   weighted avg       0.94      0.94      0.94        81
+
+
+
+##想嘗試:與前一幀相比的位移、與第1幀相比的位移，想把他們只保留幾個節點試試
+        :label_map有需要嗎//要用one hot需要是數字，所以還是要轉
+##接下來: 增加手語動作，先共用出20個吧
+        了解如何再前端使用

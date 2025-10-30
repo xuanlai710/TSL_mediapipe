@@ -1,0 +1,12 @@
+src想重新整理程式碼/
+video_save/
+video/
+存完整動作的/
+文章/
+scripts/test.py
+網站/
+model/
+npy/x.npy
+TSL_mediapipe_clean/
+hand_sign_model.pkl
+hand_sign_scaler.pkl

@@ -1,0 +1,18 @@
+{
+  "dad": 0,
+  "getup": 1,
+  "goodmoring": 2,
+  "happy": 3,
+  "like": 4,
+  "mom": 5,
+  "older brother": 6,
+  "older sister": 7,
+  "play": 8,
+  "sign language": 9,
+  "sorry": 10,
+  "study": 11,
+  "thanks": 12,
+  "together": 13,
+  "younger brother": 14,
+  "younger sister": 15
+}

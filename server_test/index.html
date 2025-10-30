@@ -1,0 +1,83 @@
+  <!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Detection Demo</title>
+  <!--mediapipe在前端使用要輸入-->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <style>
+    video { transform: scaleX(-1); width: 640px; height: 480px; }
+  </style>
+</head>
+<body>
+  <h2>手語鏡頭測試</h2>
+  <video id="video" autoplay playsinline></video>
+  <p id="result">預測結果：等待中...</p>
+
+  <script>
+    const videoElement = document.getElementById('video');
+    const resultEl = document.getElementById('result');
+    
+    const FRAME_LEN = 30; // LSTM 輸入長度
+    const STEP = 5;       // 滑動步長
+    let leftSeq = [], rightSeq = [];
+
+    async function sendToServer(seqLeft, seqRight) {
+      const data = { left: seqLeft, right: seqRight };
+      try {
+        const res = await fetch('http://192.168.0.234:5000/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        resultEl.textContent = `預測結果：${result.label} (${result.confidence.toFixed(2)})`;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const hands = new Hands({ locateFile: (file) =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+
+    hands.setOptions({
+      maxNumHands: 2,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(results => {
+      const leftIndex = results.multiHandedness.findIndex(h => h.label === 'Left');
+      const rightIndex = results.multiHandedness.findIndex(h => h.label === 'Right');
+
+      const leftLandmarks = leftIndex !== -1 ? 
+        results.multiHandLandmarks[leftIndex].map(p => [p.x, p.y, p.z]) : 
+        Array(21).fill([0, 0, 0]);
+      const rightLandmarks = rightIndex !== -1 ? 
+        results.multiHandLandmarks[rightIndex].map(p => [p.x, p.y, p.z]) : 
+        Array(21).fill([0, 0, 0]);
+
+      leftSeq.push(leftLandmarks);
+      rightSeq.push(rightLandmarks);
+
+      // 滑動窗口送 API
+      if (leftSeq.length >= FRAME_LEN) {
+        sendToServer(leftSeq.slice(0, FRAME_LEN), rightSeq.slice(0, FRAME_LEN));
+        // 保留最後 FRAME_LEN - STEP 幀
+        leftSeq = leftSeq.slice(STEP);
+        rightSeq = rightSeq.slice(STEP);
+      }
+    });
+
+    const camera = new Camera(videoElement, {
+      onFrame: async () => { await hands.send({ image: videoElement }); },
+      width: 640,
+      height: 480
+    });
+    camera.start();
+  </script>
+</body>
+</html>
