@@ -1,0 +1,33 @@
+/* 讓 Loading 畫面在網頁上居中 */
+#loading-overlay {
+    text-align: center;
+    padding: 80px 0;
+    font-size: 1.2rem;
+    color: #007AFF; /* 使用藍色作為 Loading 顏色 */
+}
+
+/* 預設隱藏：這是關鍵，讓它在 JS 運行前不顯示 */
+.loading-hidden {
+    display: none !important; 
+}
+
+/* 顯示狀態 */
+.loading-visible {
+    display: block !important;
+}
+
+/* 旋轉圖示的 CSS */
+.spinner {
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-top: 5px solid #007AFF; 
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

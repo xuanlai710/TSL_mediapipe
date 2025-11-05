@@ -1,0 +1,41 @@
+.content{
+    display: flex;
+    justify-content: center;
+
+    .faq{
+        margin-bottom: 70px;
+        .titlefaq{
+            font-size: 1.5rem;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .selection{
+
+            button{
+                padding: 0; 
+                border: none;
+                background-color: transparent;
+                cursor: pointer; /* 保持滑鼠指標為可點擊 */
+
+                .card-img-top{
+                    padding: 10px;
+                }
+
+                .card-body{
+                    display: flex;
+                    justify-content: space-between;
+                    h5{
+                        font-size: 1.25rem;
+                    }
+                    p{
+                        font-size: 1rem;
+                    }
+                }
+            }
+            
+            
+
+        }
+    }
+}

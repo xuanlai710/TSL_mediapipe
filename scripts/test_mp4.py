@@ -13,6 +13,7 @@ import pandas as pd
 video = "video"       # 影片在這個資料夾下
 output_folder = "data"
 npy_output_folder = "data_npy"
+groups = []
 #-----------------------------------------------------
 #之後可變化數值-----------
 frame_len = 30
@@ -159,9 +160,7 @@ for label in os.listdir(video): #(1)os.listdir用于返回指定的文件夹(vid
         output_csv = os.path.join(label_name,os.path.splitext(filename)[0] + ".csv")
         output_npy = os.path.join(label_name_npy,os.path.splitext(filename)[0] + ".npy")
         
-        if not os.path.exists(output_csv): #若之前已經跑過了就跳過  
-            # print(f"skip: {filename}")
-            # continue 
+        if not os.path.exists(output_csv): #若之前已經跑過了就跳過   
        
             print(f'use: {filename}')
 
@@ -256,8 +255,10 @@ for label in os.listdir(video): #(1)os.listdir用于返回指定的文件夹(vid
                         for lm in righthand:
                             row.extend(lm)
                         writer.writerow(row)#寫入
-
-            
+        else:
+            print(f"skip: {filename}")
+            continue
+        
         #讀出絕對座標
         df = pd.read_csv(output_csv)
         left_hand = df.iloc[:,1:64].to_numpy()#all row的1-63col
@@ -266,7 +267,7 @@ for label in os.listdir(video): #(1)os.listdir用于返回指定的文件夹(vid
         both_hand_nlength = np.array(normalize_length(both_hand,frame_len))#絕對座標雙手np
 
         #處理相對座標並轉成npy儲存------
-        print(both_hand_nlength.shape[1])
+        # print(both_hand_nlength.shape[1])
         left_rel = normalize_hand(both_hand_nlength[:, :63].reshape(-1, 21, 3))
         right_rel = normalize_hand(both_hand_nlength[:, 63:].reshape(-1, 21, 3))
         both_rel = np.concatenate([left_rel, right_rel], axis=1)#完整相對座標
@@ -281,15 +282,23 @@ for label in os.listdir(video): #(1)os.listdir用于返回指定的文件夹(vid
         X_combined = np.concatenate([both_rel, disp_frame, disp_first], axis=1)
 
         # 存檔
+
+        group_id = os.path.splitext(filename)[0]
         np.save(output_npy, X_combined)#綜合擺放中
+        groups.append(group_id)
         seq_mirror = mirror_landmarks(X_combined)
         np.save(output_npy.replace(".npy", "_mirror.npy"), seq_mirror)
-
+        groups.append(group_id)
         # 存時間拉伸
         seq_time = time_warp(X_combined, frame_len)
         np.save(output_npy.replace(".npy", "_timewarp.npy"), seq_time)
-
+        groups.append(group_id) 
         # 存隨機丟幀
         seq_dropout = random_frame_dropout(X_combined, drop_prob=0.15, target_len=frame_len)
         np.save(output_npy.replace(".npy", "_drop.npy"), seq_dropout)
+        groups.append(group_id)
+        print(group_id)
+
+np.save(os.path.join("npy", "groups.npy"), np.array(groups))
+print("All groups saved:", len(groups))
 print("finish")

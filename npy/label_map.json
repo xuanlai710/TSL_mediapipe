@@ -7,12 +7,13 @@
   "mom": 5,
   "older brother": 6,
   "older sister": 7,
-  "play": 8,
-  "sign language": 9,
+  "one": 8,
+  "play": 9,
   "sorry": 10,
   "study": 11,
   "thanks": 12,
   "together": 13,
-  "younger brother": 14,
-  "younger sister": 15
+  "work": 14,
+  "younger brother": 15,
+  "younger sister": 16
 }

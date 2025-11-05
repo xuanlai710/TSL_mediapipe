@@ -1,0 +1,16 @@
+.content {
+  display: flex;
+  justify-content: center;
+}
+
+.content .faq {
+  margin-bottom: 70px;
+}
+
+.content .faq .titlefaq {
+  font-size: 1.5rem;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+/*# sourceMappingURL=_content.css.map */

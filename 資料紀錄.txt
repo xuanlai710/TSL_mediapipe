@@ -22,12 +22,15 @@ project/
 ├─ npy/              # 最終訓練資料
 │   ├─ x.npy
 │   ├─ y.npy
+│   ├─ translation_map.json     #英翻中
 │   └─ label_map.json
 │
 ├─ best_sign_model.keras
 │
 ├─server_test/
-│   └─ index.html   #前端測試
+│   └─ index.html   #前端測試，不用了
+├─專題
+│   └─關卡三    #前端使用區
 │
 └─ server.py   #後端API，啟用模型
 

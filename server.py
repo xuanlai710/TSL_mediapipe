@@ -3,18 +3,41 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
-
 import json
-with open("npy/label_map.json", "r", encoding="utf-8") as f:
-    label_dict = json.load(f)
-# 反轉字典，模型輸出是數字要找回文字
-label_map = {v: k for k, v in label_dict.items()}
+import logging
+
+# 設定日誌等級
+logging.basicConfig(level=logging.INFO)
+
+try:
+    with open("npy/label_map.json", "r", encoding="utf-8") as f:
+        label_dict = json.load(f)
+    # 反轉字典，模型輸出是數字要找回英文文字
+    label_map = {v: k for k, v in label_dict.items()}
+except Exception as e:
+    logging.error(f"模型標籤檔 label_map.json 載入失敗: {e}")
+    label_map = {}
+
+try:
+    # 從獨立的 JSON 檔案載入英文到中文的映射
+    with open("npy/translation_map.json", "r", encoding="utf-8") as f:
+       label_chinese_map = json.load(f)
+    logging.info("中文翻譯檔 translation_map.json 載入成功。")
+except Exception as e:
+    logging.error(f"中文翻譯檔載入失敗，請確保 translation_map.json 存在: {e}")
+    label_chinese_map = {} # 載入失敗時使用空字典作為備用
+UNKNOWN_LABEL = "未知詞彙"
 
 app = Flask(__name__)
 CORS(app)#CORS(app, resources={r"/predict": {"origins": "*"}})
 
 #模型啟用
-model = tf.keras.models.load_model("best_sign_model.keras")
+try:
+    model = tf.keras.models.load_model("10.31.2.keras")
+    logging.info("TensorFlow 模型載入成功。")
+except Exception as e:
+    logging.error(f"模型載入失敗: {e}")
+    model = None
 
 FRAME_LEN = 30
 
@@ -68,43 +91,59 @@ def calc_displacement(seq, mode):
 
 @app.route('/predict',methods=["POST"])
 def predict():
-    #前端回傳值
-    data = request.get_json()
-    #------------------
-    #   回傳格式不確定
-    #先暫定回傳分為左右手，len_frame幀* (21*3)
-    #[[(第一幀)[x0 y0 z0],[x1 y1 z1], ... ,[x20 y20 z20]][...]...[len_frame幀...]]
-    #json {名 : 值}
-    #-------------------------------------
-    lefthand = np.array(data['left'])  #要np格式
-    righthand = np.array(data['right'])
-    #絕對座標
-    both_hand = np.concatenate([lefthand.reshape(-1, 63), righthand.reshape(-1, 63)], axis=1)
-    both_hand_nlength = normalize_length(both_hand, FRAME_LEN)
-    #相對座標
-    left_rel = normalize_hand(both_hand_nlength[:, :63].reshape(-1, 21, 3))
-    right_rel = normalize_hand(both_hand_nlength[:, 63:].reshape(-1, 21, 3))
-    both_rel = np.concatenate([left_rel, right_rel], axis=1)
-    # 算位移
-    disp_frame = calc_displacement(both_hand_nlength,mode = "frame")
-    disp_first = calc_displacement(both_hand_nlength, mode="first")
+    if model is None:
+        return jsonify({"error": "Model not loaded"}, 500)
+    
+    try:
+        #前端回傳值
+        data = request.get_json()
+        #------------------
+        #回傳分為左右手，len_frame幀* (21*3)
+        #[[(第一幀)[x0 y0 z0],[x1 y1 z1], ... ,[x20 y20 z20]][...]...[len_frame幀...]]
+        #json {名 : 值}
+        #-------------------------------------
+        lefthand = np.array(data['left'])  #要np格式
+        righthand = np.array(data['right'])
+        #絕對座標
+        both_hand = np.concatenate([lefthand.reshape(-1, 63), righthand.reshape(-1, 63)], axis=1)
+        both_hand_nlength = normalize_length(both_hand, FRAME_LEN)
+        #相對座標
+        left_rel = normalize_hand(both_hand_nlength[:, :63].reshape(-1, 21, 3))
+        right_rel = normalize_hand(both_hand_nlength[:, 63:].reshape(-1, 21, 3))
+        both_rel = np.concatenate([left_rel, right_rel], axis=1) # (30, 126)
+        # 算位移
+        disp_frame = calc_displacement(both_hand_nlength,mode = "frame")
+        disp_first = calc_displacement(both_hand_nlength, mode="first")
 
-    X_combined = np.concatenate([both_rel, disp_frame, disp_first], axis=1)
-    X_combined = np.expand_dims(X_combined, axis=0)  # (1, frame_len, features)??
+        X_combined = np.concatenate([both_rel, disp_frame, disp_first], axis=1)
+        X_combined = np.expand_dims(X_combined, axis=0)  # (1, frame_len, features)??
 
-   # === 模型預測 ===
-    pred = model.predict(X_combined)
-    pred_label = int(np.argmax(pred))
-    confidence = float(np.max(pred))
+        # 模型預測
+        pred = model.predict(X_combined)
+        pred_label = int(np.argmax(pred))
+        confidence = float(np.max(pred))
 
-    # === 閾值與平滑控制（可調整） ===
-    CONF_THRESHOLD = 0.6
-    result = {
-        "label": label_map.get(pred_label, "unknown") if confidence > CONF_THRESHOLD else "unknown",
-        "confidence": confidence
-    }
+        english_label = label_map.get(pred_label, "unknown")
 
-    return jsonify(result)
+        # 閾值與平滑控制（可調整）
+        CONF_THRESHOLD = 0.6
+        # 判斷是否超過閾值
+        if confidence > CONF_THRESHOLD :
+            # 轉換為中文
+            chinese_label = label_chinese_map.get(english_label, english_label)
+        else:
+            chinese_label = UNKNOWN_LABEL # "未知詞彙"
+            english_label = "unknown"
+
+        result = {
+            "label": chinese_label,     #中文意思
+            "english_label": english_label, #英文意思
+            "confidence": confidence    #這個前端應該不會用到
+        }
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"預測過程中發生錯誤: {e}")
+        return jsonify({"error": str(e)}, 500)
 
 # === 主程式 ===
 if __name__ == "__main__":

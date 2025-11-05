@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--bootstrap 5 css-->
+    <link rel="stylesheet" href="../bootstrap.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手語教學平台</title>
+    <link rel="stylesheet" href="scss/all.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+    <script src="../js/jquery-3.7.1.min.js"></script>
+    <script src="../js/jquery-migrate-3.5.0.min.js"></script>
+    <script src="all.js"></script>
+</head>
+<body>
+
+    <!-- Modal -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">登入</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="account-input" class="col-form-label">帳號</label>
+                            <input type="text" class="form-control" id="account-input">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password-input" class="col-form-label">密碼</label>
+                            <input type="password" class="form-control" id="password-input"> 
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary">註冊</button>
+                    <button type="button" class="btn btn-primary">確認</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="loading-overlay" class="loading-hidden">
+            <div class="spinner"></div> 
+            <p>正在努力載入資料中...</p>
+        </div>
+        
+        <div class="faq" id="main-content">
+            <div class="selection">
+                </div>
+        </div>
+    </div>
+
+    <!--主頁面-->
+    <div class="position-sticky top-0 z-index-300">
+        <nav class="header navbar navbar-expand-lg pt-3 border-bottom pb-0" 
+             style="background-color: rgba(255, 255, 255, 0.95);">
+            
+            <div class="home container-fluid container-lg">
+                <a href="../專題主頁/main_web.html">
+                    <img class="me-3 mb-3" src="../img/homepage .png" alt="首頁">
+                    <p class="mb-3">HOME</p>
+                </a>
+            </div>
+
+            <div class="container">
+                <div class="row-lg">
+                    <div class="col-lg-4"><a href="../專題測驗/test_web.html">挑戰</a></div>
+                    <div class="col-lg-4"><div class="dropdown">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                                學習
+                            </a>
+
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                                <li><a class="dropdown-item" href="../專題學習/lesson_web.html">第一階段</a></li>
+                                <li><a class="dropdown-item" href="#">第二階段</a></li>
+                                <li><a class="dropdown-item" href="#">第三階段</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-4"><a href="#">特別任務</a></div>
+                    <div class="col-lg-4"><a href="#" data-bs-toggle="modal" data-bs-target="#staticBackdrop" data-bs-whatever="@mdo">個人檔案</a></div>
+                </div>
+            </div>
+        </nav>
+
+        
+
+        <div class="banner">
+            <img src="../img/banner.png" alt="">
+        </div>
+
+        <div class="content">
+            <div class="con_pic">
+                <img src="../img/M1.png" alt="">
+                <div class="con_p">
+                    <h1>
+                        學手語，連結無聲的世界
+                    </h1>
+                    <p>
+                        在這個充滿聲音的世界裡，有一群人用手勢與表情傳達思緒與情感。手語，不只是溝通的工具，更是一種豐富而溫柔的語言。我們相信，每個人都值得被理解，也都能成為橋樑。透過這個手語學習網站，我們讓「雙手說話」，幫助你用肢體傳達心意，跨越聲音的界線。「讓世界聽見你」不只是一句口號，更是一個承諾——讓每個想學習、想理解、想靠近無聲世界的人，都能從這裡出發，踏上溫柔而堅定的溝通旅程。無論你是初學者、家人、教育者，還是只是對手語感到好奇，這裡都是你的起點。
+                    </p>
+                </div>
+            </div>
+            <div class="con_pic">
+                <div class="con_p">
+                    <h2>
+                        AI學手語，溝通更簡單
+                    </h2>
+                    <p>
+                        我們的手語學習平台結合人工智慧影像辨識技術，透過攝影機即時分析你的手勢、位置與動作細節，精準判斷是否正確完成每個手語動作。系統會即時提供回饋與修正建議，讓學習不再只是看影片模仿，而是像有一位專屬老師在旁指導。無論你是初學者還是進階學習者，都能在互動練習中快速掌握手語要領，跨越聲音與距離的障礙，讓溝通更自然、更高效。
+                    </p>
+                </div>
+                <img src="../img/M1.png" alt="">
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>聯絡我們</p>
+            <ul>
+                <li><a href="#"><img src="https://raw.githubusercontent.com/hexschool/HTMLHWSource/master/singlePage/facebookIcon.png" alt=""></a></li>
+                <li><a href="#">FB</a></li>
+                <li><a href="#"><img src="https://raw.githubusercontent.com/hexschool/HTMLHWSource/master/singlePage/twitterIcon.png" alt=""></a></li>
+                <li><a href="#">X</a></li>
+            </ul>
+        </div>
+    </div>
+    <!--bootstrap 5 js-->
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/auth_profile.js"></script>
+</body>
+</html>

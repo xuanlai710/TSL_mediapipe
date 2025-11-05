@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--bootstrap 5 css-->
+    <link rel="stylesheet" href="../bootstrap.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手語教學平台</title>
+    <link rel="stylesheet" href="scss/exam_all.css">
+
+      <!--mediapipe在前端使用要輸入-->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+    <script src="../js/jquery-3.7.1.min.js"></script>
+    <script src="../js/jquery-migrate-3.5.0.min.js"></script>
+
+    <script src="exam_web3.js"></script>
+
+    <!-- 內聯樣式：確保 Canvas 和 Video 容器尺寸一致 -->
+    <style>
+        .video-container {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #camera-stream {
+            display: none; /* 隱藏原始 video 元素 */
+        }
+        #output-canvas {
+            display: block;
+            width: 100%;
+            border: 1px solid #6c757d;
+            border-radius: 0.25rem;
+            background-color: #343a40;
+            min-height: 400px;
+        }
+        /* 增加偵錯資訊的樣式 */
+        #prediction-display-debug {
+            white-space: pre-wrap; /* 允許換行 */
+            text-align: left;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+        }
+
+        #result-feedback {
+            display: flex;             /* 讓圖與文字在同一行 */
+            align-items: center;       /* 垂直置中 */
+            justify-content: center;   /* 水平置中，可依需求調整 */
+            gap: 10px;                 /* 圖與文字間距 */
+            white-space: nowrap;       /* 文字不換行 */
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <!-- 導覽列/頁首 -->
+        <nav class="header navbar navbar-expand-lg border-bottom pb-0"
+            style="background-color: rgba(255, 255, 255, 0.95);">
+            <div class="titlepro">
+                <p>進度</p>
+            </div>
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar bg-info" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </nav>
+        <div class="content">
+            <div class="faq">
+                <p class="titlefaq">請做出以下題目的動作:</p>
+                <p id="titlechange">爸爸</p>
+                <div class="container text-center py-4">
+    
+                    <div class="row justify-content-center">
+                        <!-- 在手機上 (col-12)，父容器佔滿 100% 寬度；在電腦上 (col-lg-8)，父容器只佔 66.66% 寬度，並自動居中。 -->
+                        <div class="col-12 col-lg-8"> 
+                            <!-- <video id="camera-stream" autoplay playsinline class="w-100 border border-secondary rounded" 
+                                style="max-width: 600px; background-color: #343a40; min-height: 400px;"></video> -->
+                            <!-- Video 元素用於獲取串流，但隱藏起來 -->
+                            <video id="camera-stream" autoplay playsinline></video>
+                            <!-- Canvas 元素用於繪製 MediaPipe 結果 -->
+                            <canvas id="output-canvas"></canvas>
+                            <div id="status-message" class="mt-3 text-muted">請點擊「繼續」並允許使用鏡頭。</div>
+                            <!-- 偵錯資訊顯示區 -->
+                            <pre id="prediction-display-debug" class="text-start fs-6">模型輸出: 尚未啟動</pre>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        <div class="footer border-top">
+            <!-- 結果顯示區 (只保留顯示用 DOM) -->
+             <div id="result-feedback" class="d-none">
+                <img id="result-icon" src="../img/right.png" alt="結果圖示" style="width: 80px; height:80px;" class="mb-3">
+                <p id="result-text" class="fs-2 fw-bold m-0 text-success">成功！</p>
+            </div>
+            <div class="d-flex justify-content-end w-100 pe-3">
+                <!-- 移除跳過和下一題按鈕 -->
+                <button id="camera-toggle-btn" class="check btn btn-primary">啟動鏡頭</button>
+            </div>
+        </div>
+    </div>
+
+    <!--bootstrap 5 js-->
+    <script src="../js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

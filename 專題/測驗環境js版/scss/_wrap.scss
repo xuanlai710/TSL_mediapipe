@@ -1,0 +1,11 @@
+html, body {
+    margin: 0; /* 移除預設邊距 */
+    padding: 0;
+    height: 100%; /* 讓 html 和 body 也占滿 */
+
+    .wrap{
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+}

@@ -1,0 +1,81 @@
+.content_wrap{
+    margin-top: 50px;
+    display: flex;
+    
+
+    .content{
+        flex: 3;
+        margin-left: 50px;
+        padding-right: 50px;
+        border-right: 2px solid $urtext;
+        .title{
+            h2{
+                font-size: 2rem;
+            }
+        }
+
+        .con_class{
+            display: flex;
+            flex-wrap: wrap;
+
+            .con_class1,.con_class2{
+                display: flex;
+                gap: 20px; /* 卡片間距 */
+
+                .class1,.class2 {
+                    flex: 1;         /* 平均分配寬度 */
+                    max-width: 50%;  /* 限制最多佔一半 */
+                    
+                    .card{
+                        margin-top: 50px;
+
+                        .card-body{
+                            line-height:1.5;
+                            h5{
+                                font-size: 1.25rem;
+                            }
+                            h6{
+                                font-size: 1rem;
+                            }
+                        }
+                    
+                    }
+                }
+            }
+        }
+        
+        
+    }
+    .list{
+        flex: 1;
+        padding-right: 50px;
+        padding-left: 50px;
+
+        .pdata{
+
+            p{
+                text-align: center;
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+            .preson_state{
+                display: flex;
+                flex-direction: column; 
+                align-items: center;
+
+                text-align: center;
+                font-size: 20px;
+                color:$ursecondary;
+
+                .p_name{
+                    display: flex;
+                    margin-top: 10px;
+                }
+                .col{
+                    margin-top: 10px;
+                }
+            }
+        }
+    }
+
+}

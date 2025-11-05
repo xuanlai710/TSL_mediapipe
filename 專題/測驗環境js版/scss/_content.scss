@@ -1,0 +1,121 @@
+.content{
+    flex-basis: 80%;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+
+    .faq1{
+        margin-bottom: 10px;
+        .titlefaq{
+            font-size: 1.5rem;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .selection{
+            padding-top: 50px;
+            button{
+                padding: 0; 
+                border: none;
+                background-color: transparent;
+                cursor: pointer; /* 保持滑鼠指標為可點擊 */
+
+                .card-img-top{
+                    height: 280px;
+
+                    border-top-left-radius: var(--bs-card-border-radius);
+                    border-top-right-radius: var(--bs-card-border-radius);
+                }
+
+                .card-body{
+                    display: flex;
+                    justify-content: space-between;
+
+                    border-bottom-left-radius: var(--bs-card-border-radius);
+                    border-bottom-right-radius: var(--bs-card-border-radius);
+
+                    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+                    h5{
+                        font-size: 1.25rem;
+                    }
+                    p{
+                        font-size: 1rem;
+                    }
+                }
+
+                
+            }
+        }
+    }
+
+    .faq2{
+        width: 20rem;
+        margin-bottom: 10px;
+
+        display: flex;
+        flex-direction:column;
+        align-items:center;
+        .titlefaq{
+            font-size: 1.5rem;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        #titlechange{
+            display: flex;
+            justify-content: center;
+            .img-fluid{
+                width: 12rem;
+                height: 12rem;
+            }
+            
+        }
+
+        .d-flex{
+            a{
+                width: 20rem;
+                height: 3rem;
+            }
+        }
+    }
+}
+
+/* 讓未選中的卡片標題預設為藍色 (建議) */
+.answer-option:not(.selected) .card-body h5 {
+    color: #0d6efd; 
+}
+
+
+/* 情境 A: 影片題/文字選項 (<a> 標籤，對應 .faq2)
+  顏色反轉：藍底白字。
+*/
+.answer-option.selected {
+    background-color: #0d6efd !important; /* Bootstrap Primary Blue */
+    color: white !important;
+    border-color: #0a58ca !important; /* A darker blue for the border */
+}
+/* 確保 <a> 標籤內的 <span> (數字和文字) 也變白 */
+.answer-option.selected span {
+    color: white !important;
+    border-color: white !important; /* 數字框的邊框也變白 */
+}
+
+
+/* 情境 B: 圖片題/卡片選項 (<button> 包 <card>，對應 .faq1)
+  我們將 "反轉" card-body 的顏色
+*/
+.answer-option.selected .card {
+    /* 1. 保留強烈的藍色邊框 */
+    border: 1px solid #0d6efd;
+}
+
+/* 2. 將 card-body (底下的文字區域) 顏色反轉 */
+.answer-option.selected .card-body {
+    background-color: #0d6efd;
+    color: white !important; 
+}
+
+/* 3. 確保 card-title (h5) 也是白色 */
+.answer-option.selected .card-body h5 {
+    color: white !important;
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--bootstrap 5 css-->
+    <link rel="stylesheet" href="../bootstrap.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手語學習網站</title>
+    <link rel="stylesheet" href="scss/teat_all.css">
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+    <script src="../js/jquery-3.7.1.min.js"></script>
+    <script src="../js/jquery-migrate-3.5.0.min.js"></script>
+</head>
+<body>
+    <!-- Modal -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">登入</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="account-input" class="col-form-label">帳號</label>
+                            <input type="text" class="form-control" id="account-input">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password-input" class="col-form-label">密碼</label>
+                            <input type="password" class="form-control" id="password-input"> 
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary">註冊</button>
+                    <button type="button" class="btn btn-primary">確認</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--主頁面-->
+    <div class="position-sticky top-0 z-index-300">
+        <nav class="header navbar navbar-expand-lg pt-3 border-bottom pb-0" 
+             style="background-color: rgba(255, 255, 255, 0.95);">
+            
+            <div class="home container-fluid container-lg">
+                <a href="../專題主頁/main_web.html">
+                    <img class="me-3 mb-3" src="../img/homepage .png" alt="首頁">
+                    <p class="mb-3">HOME</p>
+                </a>
+            </div>
+
+            <div class="container">
+                <div class="row-lg">
+                    <div class="col-lg-4"><a href="../專題測驗/test_web.html">挑戰</a></div>
+                    <div class="col-lg-4"><div class="dropdown">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                                學習
+                            </a>
+
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                                <li><a class="dropdown-item" href="../專題學習/lesson_web.html">第一階段</a></li>
+                                <li><a class="dropdown-item" href="#">第二階段</a></li>
+                                <li><a class="dropdown-item" href="#">第三階段</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-4"><a href="#">特別任務</a></div>
+                    <div class="col-lg-4"><a href="#" data-bs-toggle="modal" data-bs-target="#staticBackdrop" data-bs-whatever="@mdo">個人檔案</a></div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content_wrap">
+            <div class="content">
+                <div class="title">
+                    <p>第一階段</p>
+                </div>
+                <div class="allstage container">
+                    <div class="row">
+                        <div class="stage1 col">
+                            <a href="../測驗環境js版/quiz.html" class="btn btn-primary btn-lg" role="button">
+                                關卡一
+                            </a>
+                        </div>
+                        <div class="stage2 col">
+                            <a href="#" class="btn btn-primary btn-lg" role="button">
+                                關卡二
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="stage3 col">
+                            <a href="#" class="btn btn-primary btn-lg" role="button">
+                                關卡三
+                            </a>
+                        </div>
+                        <div class="stage4 col">
+                            <a href="#" class="btn btn-primary btn-lg" role="button">
+                                關卡四
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="stage5 col">
+                            <a href="#" class="btn btn-primary btn-lg" role="button">
+                                關卡五
+                            </a>
+                        </div>
+                        <div class="stage6 col">
+                            <a href="#" class="btn btn-primary btn-lg" role="button">
+                                最終關卡
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="list ">
+                <div class="pdata">
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            
+        </div>
+    </div>
+    <!--bootstrap 5 js-->
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/auth_profile.js"></script>
+</body>
+</html>

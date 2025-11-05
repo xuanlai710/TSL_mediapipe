@@ -1,0 +1,16 @@
+.header{
+    flex-basis: 10%;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+
+    .titlepro{
+        width: 40px;
+        height: 20px;
+        margin-left: 10px;
+    }
+    .progress{
+        
+        width: 50rem;
+    }
+}
