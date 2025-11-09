@@ -5,6 +5,74 @@
  * Copyright 2011-2021 Twitter, Inc.
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
  */
+.col-lg-8 {
+  flex: 0 0 auto;
+  width: 100%;
+}
+/* 限制螢幕滑動，頭尾固定顯示 */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+} 
+
+.wrap {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;  /* vh = viewport height, 讓它剛好撐滿畫面 */
+}
+
+.content {
+    flex: 1; /* 中間區塊可伸縮，佔滿剩餘空間 */
+    overflow: hidden; /* 防止中間內容滾動 */
+}
+
+.footer {
+    flex-shrink: 0; /* 固定底部 */
+}
+
+.video-container {
+    position: relative;
+    /* max-width: 600px; */
+    margin: 0 auto;
+}
+#camera-stream {
+    display: none; /* 隱藏原始 video 元素 */
+}
+#output-canvas {
+    display: block;
+    /* width: 100%; */
+    justify-content: center;
+    max-width: 534px;
+    border: 1px solid #6c757d;
+    border-radius: 0.25rem;
+    background-color: #343a40;
+    min-height: 400px;
+}
+/* 增加偵錯資訊的樣式 */
+#prediction-display-debug {
+    white-space: pre-wrap; /* 允許換行 */
+    text-align: left;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+}
+
+#result-feedback {
+    display: flex;             /* 讓圖與文字在同一行 */
+    align-items: center;       /* 垂直置中 */
+    justify-content: center;   /* 水平置中，可依需求調整 */
+    gap: 10px;                 /* 圖與文字間距 */
+    white-space: nowrap;       /* 文字不換行 */
+}
+
+/* 新增：防止倒數計時器文字換行 */
+#countdown-timer {
+    white-space: nowrap;
+}
+
 :root {
   --bs-blue: #0d6efd;
   --bs-indigo: #6610f2;
@@ -439,7 +507,7 @@ summary {
   display: list-item;
   cursor: pointer;
 }
-
+/* HTML 原生 <progress> 標籤 */
 progress {
   vertical-align: baseline;
 }
@@ -4458,6 +4526,7 @@ textarea.form-control-lg {
     background-position-x: 1rem;
   }
 }
+/* Bootstrap 的容器 <div class="progress"> */
 .progress {
   display: flex;
   height: 1rem;
@@ -9767,7 +9836,8 @@ table {
 }
 
 .header {
-  height: 150px;
+  flex-basis: 10%;
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
 }
@@ -9815,6 +9885,7 @@ table {
 .footer {
   display: flex;
   justify-content: space-between;
+  flex-shrink: 0; /* 固定底部 */
 }
 .footer .YN {
   display: flex;

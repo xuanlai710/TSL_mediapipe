@@ -1,21 +1,27 @@
 // --- 設定與常數 ---
 //想法:加倒數計時器、要請使用者比完後離開嗎，還是保留現在
-// 遊戲狀態變數
+// 狀態變數
 let isCameraRunning = false;
 let cameraStream = null; // 用於儲存 Camera 實例以便停止
+const EXAM_DURATION_SECONDS = 8; // 設定考試時間秒
+// --- 測驗流程狀態 (用於串接 quiz.js) ---
+let currentQuizIndex = 0; // 測驗總進度中的當前索引
+let totalQuizLength = 1; // 測驗總長度 (至少為 1)
+let targetSignWord = "對不起"; // 當前關卡目標單字
+
 
 // DOM 元素 (使用 try-catch 確保所有元素都存在)
-let videoElement, canvasElement, canvasCtx, titleChange, statusMessage, predictionDisplayDebug, cameraToggleButton, resultFeedback, resultText;
+let videoElement, canvasElement, canvasCtx, titleChange, statusMessage, predictionDisplayDebug, cameraToggleButton, resultFeedback, resultText, countdownTimer, timeRemainingDisplay,progressBar;
 
 //API設定
-const FLASK_API_URL = 'http://192.168.0.234:5000/predict'; // 您的 Flask API 端點
-const MAX_FRAME_HISTORY = 30; // 後端模型需要的固定幀數 (對應 Python 中的 FRAME_LEN)
-const API_SEND_INTERVAL = 5; // 每隔 1 幀就發送一次數據給 API
+const FLASK_API_URL = 'http://192.168.150.236:5000/predict'; // Flask API 端點
+const MAX_FRAME_HISTORY = 30; // 後端模型需要的固定幀數 (對應Python的FRAME_LEN)
+const API_SEND_INTERVAL = 5; // 每隔 ? 幀就發送一次數據給 API
 let frameCounter = 0;
 let predictionData = []; // 用於累積最近 MAX_FRAME_HISTORY 幀的數據
 
 // --- 平滑邏輯設定 (解決中途判定問題) ---
-const HISTORY_LENGTH = 15; // 判斷大小 (最近 20 幀)
+const HISTORY_LENGTH = 15; // 判斷大小 (最近15幀)
 const MATCH_THRESHOLD = 6; // 窗口中必須有 幀匹配才判定成功
 const CONFIDENCE_THRESHOLD = 0.6; // 僅考慮信心度大於此值的預測
 let matchHistory = []; // 用於儲存最近 N 幀的匹配狀態 (true/false)
@@ -23,6 +29,9 @@ let matchHistory = []; // 用於儲存最近 N 幀的匹配狀態 (true/false)
 let pendingJudge = false; // 防止重複顯示
 let timeoutHandle = null; // 控制逾時顯示
 let judgeDelayHandle = null; // 延遲顯示用
+let countdownInterval = null; //用於儲存 setInterval 句柄，提供平滑的倒數效果
+let isFirstFrameProcessed = false; // 新增：追蹤是否已成功處理第一幀 (修正延遲問題的關鍵)
+let startTime = 0; // 用於計算剩餘時間
 
 // --- MediaPipe 設定 ---
 const hands = new Hands({
@@ -51,28 +60,49 @@ function initializeDOM() {
         statusMessage = document.getElementById('status-message');//目前小提醒
         predictionDisplayDebug = document.getElementById('prediction-display-debug');//模型輸出: 之後會刪掉
         cameraToggleButton = document.getElementById('camera-toggle-btn');//控制鏡頭是否開啟按鈕
+        skipButton = document.getElementById('skip-btn');//失敗後刪除鍵
         resultFeedback = document.getElementById('result-feedback');//結果顯示 之後可能刪掉
         resultText = document.getElementById('result-text');//
-        //feedback = document.getElementById('result-feedback');
         icon = document.getElementById('result-icon');
-        //text = document.getElementById('result-text');
+        countdownTimer = document.getElementById('countdown-timer');
+        timeRemainingDisplay = document.getElementById('time-remaining');
+        progressBar = document.getElementById('progress-bar'); //抓取 progress-bar 元素
         
         // 檢查關鍵元素是否存在
-        if (!videoElement || !canvasElement || !cameraToggleButton) {
-            console.error("DOM 錯誤: 找不到所有必要的 HTML 元素 (e.g., video, canvas, button)。請檢查 ID 是否正確。");
+        if (!videoElement || !canvasElement || !cameraToggleButton || !countdownTimer || !timeRemainingDisplay || !progressBar || !skipButton) {
+            console.error("DOM 錯誤: 找不到所有必要的 HTML 元素 。請檢查 ID 是否正確。");
             statusMessage.textContent = "初始化失敗：缺少關鍵 HTML 元素。";
             return false;
         }
 
+        // --- 讀取 Session 進度並更新 UI ---
+        const savedIndex = sessionStorage.getItem('currentQuizIndex');
+        const savedLength = sessionStorage.getItem('totalQuizLength');
+        const savedTarget = sessionStorage.getItem('targetSignWord');
+        if (savedIndex !== null && savedLength !== null && savedTarget !== null) {
+            // 字串轉換為以十進位表示的整數
+            currentQuizIndex = parseInt(savedIndex);
+            totalQuizLength = parseInt(savedLength);
+            targetSignWord = savedTarget;
+        }
+
         // 初始狀態設定
         cameraToggleButton.textContent = "啟動鏡頭"; 
-        titleChange.textContent = "爸爸";
+        // 使用從 sessionStorage 讀取或預設的目標單字
+        titleChange.textContent = targetSignWord; 
+        // 初始隱藏 顯示結果、倒數計時器 、skipbtn
         resultFeedback.classList.add('d-none');
+        countdownTimer.classList.add('d-none');
+        skipButton.classList.add('d-none'); 
+        // 初始化顯示時間
+        timeRemainingDisplay.textContent = `${EXAM_DURATION_SECONDS}.00`; 
         
         // 設定 Canvas 初始尺寸 (用於佔位)
 
+        updateProgress(); // 呼叫更新進度條
         // 設定事件監聽器
         cameraToggleButton.addEventListener('click', toggleCamera);
+        skipButton.addEventListener('click', skipExam);
 
         console.log("DOM 元素初始化成功。");
         return true;
@@ -82,7 +112,118 @@ function initializeDOM() {
     }
 }
 
+//---------------更新進度條 --------------------
+function updateProgress(isSuccess = false) {
+    let progressIndex = currentQuizIndex;
+    if (isSuccess) {
+        // 成功時，進度條移動到下一關卡的位置
+        progressIndex = currentQuizIndex + 1; 
+    }
+    
+    // 計算百分比
+    const displayProgress = Math.min(100, (progressIndex / totalQuizLength) * 100);
 
+    progressBar.style.width = displayProgress + '%';
+    progressBar.setAttribute('aria-valuenow', displayProgress);
+}
+
+// --- 計時器邏輯 ---
+function updateCountdown() {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const remaining = Math.max(0, EXAM_DURATION_SECONDS - elapsed);
+    
+    if (remaining <= 0.01) {
+        // 時間到，逾時處理在 toggleCamera 啟動時的 timeoutHandle 負責
+        timeRemainingDisplay.textContent = "0.00";
+        stopCountdown();
+        return; 
+    }
+    
+    // 更新顯示，保留兩位小數
+    timeRemainingDisplay.textContent = remaining.toFixed(2);
+    // 接近結束時變色提醒
+    if (remaining <= 3) {
+        timeRemainingDisplay.classList.remove('text-primary');
+        timeRemainingDisplay.classList.add('text-danger');
+    } else {
+        timeRemainingDisplay.classList.remove('text-danger');
+        timeRemainingDisplay.classList.add('text-primary');
+    }
+}
+
+function startCountdown() {
+    stopCountdown(); // 確保開始前先清除舊的計時器
+    
+    // 顯示計時器
+    countdownTimer.classList.remove('d-none'); 
+    timeRemainingDisplay.textContent = `${EXAM_DURATION_SECONDS}.00秒`;
+    timeRemainingDisplay.classList.remove('text-danger');
+    timeRemainingDisplay.classList.add('text-primary');
+    
+    // 啟動倒數計時
+    startTime = Date.now();
+    countdownInterval = setInterval(updateCountdown, 50); // 每 50ms 更新一次，提供平滑的倒數效果
+    console.log(`倒數計時器啟動，總時間 ${EXAM_DURATION_SECONDS} 秒。`);
+}
+
+function stopCountdown() {
+    if (countdownInterval !== null) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        console.log("倒數計時器停止。");
+    }
+    // 停止時隱藏計時器，並重設顯示時間
+    if (countdownTimer) {
+        countdownTimer.classList.add('d-none');
+    }
+    if (timeRemainingDisplay) {
+        timeRemainingDisplay.textContent = `${EXAM_DURATION_SECONDS}.00`;
+    }
+}
+/** 重新開始測驗 */
+function retryExam() {
+    // 移除結果和失敗按鈕
+    resultFeedback.classList.add('d-none');
+    skipButton.classList.add('d-none');
+    
+    // 重新設定 UI 狀態
+    statusMessage.textContent = `請點擊「啟動鏡頭」再次嘗試。`;
+    cameraToggleButton.textContent = "啟動鏡頭";
+    cameraToggleButton.classList.remove('btn-danger', 'btn-success');
+    cameraToggleButton.classList.add('btn-primary');
+    
+    // 重新綁定正常的 toggleCamera 事件
+    cameraToggleButton.removeEventListener('click', redirectToQuiz);
+    cameraToggleButton.removeEventListener('click', retryExam);
+    cameraToggleButton.addEventListener('click', toggleCamera);//開啟/關閉鏡頭
+    
+    // 清除 session 失敗標記
+    sessionStorage.removeItem('examResult');
+    
+    // 重設狀態變數
+    pendingJudge = false;
+    isFirstFrameProcessed = false;
+    stopCountdown();
+}
+/** 成功後導航至下一關 */
+function redirectToQuiz() {
+    // 1. 設置成功標記
+    sessionStorage.setItem('currentQuizIndex', currentQuizIndex); // 儲存當前索引，quiz.js 會自動 +1
+    sessionStorage.setItem('examResult', 'success');
+
+    // 2. 導向回 quiz.html
+    window.location.href = '../測驗環境js版/quiz.html'; 
+}
+
+/** 跳過測驗 (失敗並導航至下一關) */
+function skipExam() {
+    // 1. 設置跳過標記
+    sessionStorage.setItem('currentQuizIndex', currentQuizIndex); // 儲存當前索引，quiz.js 會自動 +1
+    sessionStorage.setItem('examResult', 'skip'); // 使用 'skip' 標記跳過
+
+    // 2. 導向回 quiz.html
+    window.location.href = '../測驗環境js版/quiz.html'; 
+}
 
 //---抓取節點---
 function formatLandmarks(results) {
@@ -115,18 +256,24 @@ function formatLandmarks(results) {
 function showFeedback(isSuccess, message) {
     // 顯示結果
     resultFeedback.classList.remove('d-none');
-
+    
+    // 儲存進度結果
+    sessionStorage.setItem('examResult', isSuccess ? 'success' : 'fail');
+    
+    //成功失敗訊息和圖示顯示
     if (isSuccess) {
             icon.src = '../img/right.png';
             resultText.textContent = message ;
             resultText.classList.remove('text-danger');
-            resultText.classList.add('text-success');//Bootstrap 的文字顏色類別 (text-success / text-danger)
+            resultText.classList.add('text-success');
     } else {
         icon.src = '../img/wrong.png';
         resultText.textContent = message;
         resultText.classList.remove('text-success');
         resultText.classList.add('text-danger');
     }
+
+    // 清理狀態
     matchHistory = [];
     predictionData = [];
     frameCounter = 0;
@@ -134,17 +281,50 @@ function showFeedback(isSuccess, message) {
 
     clearTimeout(timeoutHandle);
     clearTimeout(judgeDelayHandle);
+    stopCountdown(); //確保停止計時器
+    isFirstFrameProcessed = false;
+    
+    // 確保鏡頭已停止
     if (isCameraRunning) {
         console.log("結果已顯示，停止鏡頭。");
         cameraStream.stop();
         isCameraRunning = false;
         cameraStream = null;
-        cameraToggleButton.textContent = "啟動鏡頭";
-        cameraToggleButton.classList.remove('btn-danger');
-        cameraToggleButton.classList.add('btn-primary');
-        statusMessage.textContent = "鏡頭已自動停止。";
     }
+        
+    // 移除舊的 toggleCamera 監聽器，準備綁定新的按鈕功能
+    cameraToggleButton.removeEventListener('click', toggleCamera); //開啟/關閉鏡頭
+    cameraToggleButton.removeEventListener('click', retryExam); // 移除可能的 retry 監聽器
+    cameraToggleButton.removeEventListener('click', redirectToQuiz); // 移除可能的 success 監聽器
+    skipButton.classList.add('d-none'); // 預設隱藏跳過按鈕 (失敗時會重新顯示)
 
+    if (isSuccess) {
+        // --- 成功：顯示「下一關」按鈕並更新進度條 ---
+        updateProgress(true); // 更新進度條到下一關的位置
+        
+        cameraToggleButton.textContent = "下一關";
+        cameraToggleButton.classList.remove('btn-danger', 'btn-primary');
+        cameraToggleButton.classList.add('btn-success');
+        
+        // 綁定跳轉事件
+        cameraToggleButton.addEventListener('click', redirectToQuiz, { once: true });
+        
+        statusMessage.textContent = "恭喜您！請點擊「下一關」繼續。";
+    } else {
+        // --- 失敗/超時：顯示「重新做」和「跳過」按鈕 ---
+        // 進度條保持不變 (updateProgress() 在此處不需要呼叫)
+        
+        cameraToggleButton.textContent = "重新做";
+        cameraToggleButton.classList.remove('btn-success', 'btn-primary');
+        cameraToggleButton.classList.add('btn-danger');
+        
+        skipButton.classList.remove('d-none'); // 顯示跳過按鈕
+        
+        // 綁定重新做事件 (skipExam 已在 initializeDOM 綁定)
+        cameraToggleButton.addEventListener('click', retryExam, { once: true });
+        
+        statusMessage.textContent = "實作失敗。您可以重試或跳過。";
+    }
 }
 //平滑處理預測結果
 function checkSmoothing(predictedLabel, confidence) {//預測中文結果，信心值
@@ -165,16 +345,8 @@ function checkSmoothing(predictedLabel, confidence) {//預測中文結果，信�
     // 5. 執行最終判定
       if (!pendingJudge && successfulMatches >= MATCH_THRESHOLD) {
         pendingJudge = true;
-
-        // 延遲 1.5 秒再顯示正確
-        judgeDelayHandle = setTimeout(() => {
-        showFeedback(true, `正確！你成功比出了「${currentTarget}」`, '#198754');
-        }, 1000);
+        showFeedback(true, `正確！`,);
     }
-    
-    // // 當前模式下，只確保中性狀態訊息顯示
-    // statusMessage.textContent = `鏡頭已啟動。請做出 "${titleChange.textContent}" 的動作。 (等待穩定)`;
-    // resultFeedback.classList.add('d-none');
 }
 //發送資料到 API
 async function sendToAPI(historyData) {
@@ -234,13 +406,29 @@ function onResults(results) {
     
     //繪製手部骨架
     if (results.multiHandLandmarks   && typeof HAND_CONNECTIONS !== 'undefined') {
+        // --- 修正延遲問題：在第一次成功處理手部幀時才啟動計時器 ---
+        if (isCameraRunning && !isFirstFrameProcessed) {
+            isFirstFrameProcessed = true;
+            
+            // 啟動倒數計時器
+            startCountdown(); 
+            
+            // 啟動逾時倒數 (使用常數 EXAM_DURATION_SECONDS)超時未完成「${titleChange.textContent}」
+            timeoutHandle = setTimeout(() => {
+                if (!pendingJudge) {
+                    showFeedback(false, `判定失敗！`);
+                }
+            }, EXAM_DURATION_SECONDS * 1000);
+            
+            // 更新狀態為準備就緒
+            statusMessage.textContent = `鏡頭已啟動。請做出 "${titleChange.textContent}" 的動作。`; 
+            console.log("MediaPipe 成功處理第一幀，計時開始！");
+        }
+        //繪製節點
         for (const landmarks of results.multiHandLandmarks) {
             drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
             drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
         }
-        // predictionDisplayDebug.textContent +=  `幀數: ${frameCounter} | 累積幀數: ${predictionData.length} / ${MAX_FRAME_HISTORY}\n` +
-        //                                     `Canvas 尺寸: ${canvasWidth}x${canvasHeight}\n` +
-        //                                     `偵測到手部: ${results.multiHandHandedness.map(h => h.label).join(', ')}\n`;&& results.multiHandHandedness
         // 數據累積與發送
         const currentLandmarks = formatLandmarks(results);
         // 將當前幀數據推入歷史記錄
@@ -263,12 +451,9 @@ function onResults(results) {
     canvasCtx.restore();
 }
 
-
-/**
- * 啟動/停止鏡頭
- */
+//-----------啟動/停止鏡頭
 function toggleCamera() {
-    if (isCameraRunning) {
+     if (isCameraRunning) {
         // 停止邏輯
         console.log("嘗試停止鏡頭...");
         if (cameraStream) {
@@ -281,13 +466,15 @@ function toggleCamera() {
         cameraToggleButton.classList.add('btn-primary');
         statusMessage.textContent = "鏡頭已停止。";
         predictionDisplayDebug.textContent = "狀態: 尚未啟動鏡頭";
-        resultFeedback.classList.add('d-none');
-        // 只有鏡頭停止時才清空所有累積數據
-        predictionData = [];
-        matchHistory = [];
-        frameCounter = 0;
+        resultFeedback.classList.add('d-none');//隱藏結果顯示
+        predictionData = [];//累積一段時間節點數據
+        matchHistory = [];//存放API回傳判斷結果
+        frameCounter = 0;//目前累積總幀數
         clearTimeout(timeoutHandle);
         clearTimeout(judgeDelayHandle);
+        stopCountdown();
+        isFirstFrameProcessed = false;//尚未開始第一次偵測節點
+        skipButton.classList.add('d-none'); // 手動停止時隱藏跳過按鈕
         console.log("鏡頭已停止。");
     }
     else {
@@ -311,24 +498,16 @@ function toggleCamera() {
             console.log("呼叫cameraStream.start()...");
             cameraStream.start()
                 .then(() => {
-                    isCameraRunning = true;//鏡頭正在執行
+                    isCameraRunning = true;
                     videoElement.play();
                     
-                    // 確保 video metadata 載入後，MediaPipe 的 onResults 會處理尺寸更新                    
                     cameraToggleButton.textContent = "停止鏡頭";
                     cameraToggleButton.disabled = false;
                     cameraToggleButton.classList.remove('btn-primary');
                     cameraToggleButton.classList.add('btn-danger');
-                    statusMessage.textContent = `鏡頭已啟動。請做出 "${titleChange.textContent}" 的動作。`;
+                    statusMessage.textContent = `鏡頭已啟動。請做出 "${titleChange.textContent}" 的動作。(等待 MediaPipe 載入...)`;
                     predictionDisplayDebug.textContent = "狀態: 鏡頭運行中...";
                     console.log("MediaPipe Camera 成功啟動！");
-
-                    // 啟動 5 秒逾時倒數
-                    timeoutHandle = setTimeout(() => {
-                    if (!pendingJudge) {
-                        showFeedback(false, `超時未完成「${titleChange.textContent}」`);
-                    }
-                    }, 8000);
                 })
                 .catch(error => {
                     console.error("無法啟動鏡頭 (Promise Catch):", error);
@@ -344,12 +523,14 @@ function toggleCamera() {
                     cameraToggleButton.disabled = false;
                     cameraStream = null;
                     isCameraRunning = false;
+                    stopCountdown();
                 });
         } catch (error) {
             console.error("啟動鏡頭時發生同步錯誤:", error);
             statusMessage.textContent = `嚴重錯誤：程式碼執行失敗。請檢查控制台。`;
             cameraToggleButton.textContent = "啟動鏡頭";
             cameraToggleButton.disabled = false;
+            stopCountdown();
         }
     }
 }

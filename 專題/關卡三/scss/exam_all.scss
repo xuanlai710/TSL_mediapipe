@@ -1,7 +1,8 @@
-@import "../../../bootstrap/bootstrap";
+@import "../../bootstrap/bootstrap";
 @import "reset";//重置網站原設定
 @import "base";//全站設定
 
+@import "wrap";
 @import "header";
 @import "content";
 @import "footer";

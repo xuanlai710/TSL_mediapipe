@@ -5,6 +5,25 @@ $(document).ready(function() {
     // 確保 image 和 videoUrl 路徑正確
     const quizData = [
         {
+            type: 'signLanguageExam', 
+            questionText: '手語實作關卡 - 爸爸',
+            targetWord: '爸爸',
+            // 跳轉目標 URL，包含返回時需帶回的總問題數和當前進度
+            targetUrl: '../關卡三/exam_web3.html'
+        },
+        {
+            type: 'signLanguageExam', 
+            questionText: '手語實作關卡 - 媽媽',
+            targetWord: '媽媽',
+            targetUrl: '../關卡三/exam_web3.html'
+        },
+        {
+            type: 'signLanguageExam', 
+            questionText: '手語實作關卡 - 哥哥',
+            targetWord: '哥哥',
+            targetUrl: '../關卡三/exam_web3.html'
+        },
+        {
             type: 'imageSelect', // 圖片選擇題
             questionText: '爸爸',
             correctAnswer: '爸爸',
@@ -20,8 +39,8 @@ $(document).ready(function() {
             correctAnswer: '媽媽',
             options: [ // 選項可以隨機排列
                 { text: '哥哥', image: '../img/哥哥.png' },
-                { text: '爸爸', image: '../img/媽媽.png' },
-                { text: '媽媽', image: '../img/爸爸.png' }
+                { text: '爸爸', image: '../img/爸爸.png' },
+                { text: '媽媽', image: '../img/媽媽.png' }
             ]
         },
         {
@@ -53,12 +72,13 @@ $(document).ready(function() {
             options: ['爸爸', '媽媽', '哥哥']
         },
         // ... 在此處新增更多題目
+        
     ];
 
     // 狀態變數
     let currentQuestionIndex = 0;
     let selectedAnswer = null;
-    let totalQuestions = quizData.length;
+    const totalQuestions = quizData.length;
 
     // DOM 元素快取
     const quizContent = $('#quiz-content');//測驗內容div
@@ -71,6 +91,30 @@ $(document).ready(function() {
     const correctAnswerText = $('#correct-answer-text');//顯示正確答案
     const btnBackToMenu = $('#btn-back-to-menu');
 
+    // --- 核心修正：檢查 Session Storage 結果以更新進度 ---
+    function checkSessionForExamResult() {
+        const totalLength = sessionStorage.getItem('totalQuizLength');
+        const savedIndex = sessionStorage.getItem('currentQuizIndex');
+        const result = sessionStorage.getItem('examResult');
+
+        if (totalLength && savedIndex && result) {
+            // 優先從 sessionStorage 恢復進度
+            currentQuestionIndex = parseInt(savedIndex);
+
+            if (result === 'success' || result === 'skip') {
+                // 如果是成功或跳過，則前進到下一題
+                currentQuestionIndex++;
+                console.log(`從實作關卡返回，進度已推進至: ${currentQuestionIndex}`);
+            }
+            
+            // 清除所有實作關卡相關的 session 狀態
+            sessionStorage.removeItem('currentQuizIndex');
+            sessionStorage.removeItem('totalQuizLength');
+            sessionStorage.removeItem('examResult');
+            sessionStorage.removeItem('targetSignWord');
+        }
+    }
+    // ----------------------------------------------------
     /** 載入指定索引的題目 */
     function loadQuestion(index) {
         //顯示測驗完成
@@ -80,6 +124,12 @@ $(document).ready(function() {
         }
 
         const question = quizData[index];
+
+         // *** 處理手勢識別關卡跳轉 ***
+        if (question.type === 'signLanguageExam') {
+            handleSignLanguageExam(question);
+            return;
+        }
         let html = '';
 
         //問題類別分類
@@ -94,15 +144,44 @@ $(document).ready(function() {
         resetFooter();//重製footer
     }
 
-    /** 建立圖片題的 HTML */
+    /** 處理手語實作關卡 (跳轉) */
+    function handleSignLanguageExam(question) {
+        // 1. 將當前進度 (index) 存入 sessionStorage
+        sessionStorage.setItem('totalQuizLength', totalQuestions);
+        sessionStorage.setItem('currentQuizIndex', currentQuestionIndex);
+        sessionStorage.setItem('targetSignWord', question.targetWord);
+
+        // 2. 顯示跳轉提示畫面
+        quizContent.html(`
+            <div class="faq">
+                <p class="titlefaq">即將進行實作測驗</p>
+                <p id="titlechange">下一關：${question.questionText} (${question.targetWord})</p>
+                <div class="mt-4">
+                    <p class="text-muted">請點擊下方按鈕開始進行手語實作。</p>
+                </div>
+            </div>
+        `);
+        
+        // 3. 調整按鈕以進行跳轉
+        btnSkip.hide();
+        btnCheck.off('click').find('p').text('開始實作');
+        btnCheck.removeClass('disabled btn-danger btn-success').addClass('btn-primary').prop('disabled', false);
+        
+        // 4. 新增跳轉事件
+        btnCheck.one('click', function() {
+            // 跳轉到 exam_web3.html
+            window.location.href = question.targetUrl;
+        });
+        
+        updateProgress(); // 更新進度條
+    }
+
+    /** 建立圖片題的 HTML (只顯示圖片，不顯示文字) */
     function buildImageSelectLayout(question) {
         const optionsHtml = question.options.map(option => `
             <button class="ans answer-option" data-value="${option.text}">
-                <div class="card" style="width: 15rem; height: 21rem;">
+                <div class="card" style="width: 15rem; height: 18rem;">
                     <img src="${option.image}" class="card-img-top" alt="${option.text}">
-                    <div class="card-body">
-                        <h5 class="card-title">${option.text}</h5>
-                    </div>
                 </div>
             </button>
         `).join('');
@@ -116,7 +195,6 @@ $(document).ready(function() {
                 </div>
             </div>`;
     }
-
     /** 建立影片題的 HTML */
     function buildGIFSelectLayout(question) {
         const optionsHtml = question.options.map((option, index) => `
@@ -279,6 +357,7 @@ $(document).ready(function() {
 
 
     // 啟動測驗
+    checkSessionForExamResult(); //啟動前檢查是否從實作關卡返回
     loadQuestion(currentQuestionIndex);
 
 });
